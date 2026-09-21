@@ -170,6 +170,17 @@ body { font-family: var(--font-ui); }
   color: var(--color-error);
 }
 
+/* Aviso mientras se suben los adjuntos (ruta de envío nativa).
+   No es un error: informa de una espera esperable, así que va en el color
+   de texto normal y no en --color-error. */
+.form-upload-notice {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(230, 230, 230, 0.8);
+}
+
 /* Errores de validación por campo */
 .form-input-invalid {
   border-bottom-color: var(--color-error) !important;
