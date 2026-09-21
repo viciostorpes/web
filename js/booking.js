@@ -224,6 +224,22 @@
     });
   }
 
+  // --- Aviso durante la subida nativa ------------------------------------
+  // La ruta con adjuntos abandona la página para subir los archivos. Eso puede
+  // tardar decenas de segundos con varias imágenes o una conexión lenta, y sin
+  // aviso se lee como una web colgada. Este mensaje explica que está pasando.
+  function showUploadNotice(count, submitBtn) {
+    const existing = form.querySelector('.form-upload-notice');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'form-upload-notice';
+    el.setAttribute('role', 'status');
+    el.textContent =
+      `Uploading ${count} image${count === 1 ? '' : 's'}. This can take a minute ` +
+      `on a slow connection — please keep this page open.`;
+    submitBtn.after(el);
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -253,12 +269,19 @@
       // Sustituye el input múltiple por N inputs de archivo con nombres
       // distintos (attachment1, attachment2, ...) — el formato que los
       // docs de Formsubmit recomiendan ("use several file input fields").
+      showUploadNotice(attached.length, submitBtn);
+
       const parent = fileInput.parentElement;
-      fileInput.remove();
+      // Deshabilitado en vez de eliminado: un control deshabilitado no se envía
+      // (así no duplica los adjuntos), pero sigue en el DOM, así que al volver
+      // atrás desde Formsubmit el formulario no se queda sin selector de
+      // archivos. Lo reactiva el listener de pageshow de más abajo.
+      fileInput.disabled = true;
       attached.forEach((f, i) => {
         const hiddenInput = document.createElement('input');
         hiddenInput.type = 'file';
         hiddenInput.name = 'attachment' + (i + 1);
+        hiddenInput.className = 'attachment-injected';
         hiddenInput.style.display = 'none';
         const dt = new DataTransfer();
         dt.items.add(f);
@@ -292,6 +315,25 @@
       msg.textContent = config.errorMessage;
       submitBtn.after(msg);
       setTimeout(() => msg.remove(), 5000);
+    }
+  });
+
+  // --- Volver atrás desde Formsubmit --------------------------------------
+  // Si el envío con adjuntos falla (o el usuario se arrepiente), el botón
+  // "atrás" devuelve esta página tal y como la dejó el submit: botón bloqueado
+  // en "Sending...", selector de archivos deshabilitado y los inputs inyectados
+  // todavía dentro. Sin esto hay que recargar a mano para poder reintentar.
+  // Sin el guard de `persisted`: no todos los navegadores restauran desde
+  // bfcache, y en una carga normal esto no encuentra nada que deshacer.
+  window.addEventListener('pageshow', () => {
+    form.querySelectorAll('.attachment-injected').forEach((el) => el.remove());
+    if (fileInput) fileInput.disabled = false;
+    const notice = form.querySelector('.form-upload-notice');
+    if (notice) notice.remove();
+    const btn = form.querySelector('.form-submit');
+    if (btn && btn.disabled) {
+      btn.disabled = false;
+      btn.textContent = 'Send';
     }
   });
 })();
