@@ -290,6 +290,10 @@ body { font-family: var(--font-ui); }
   text-transform: lowercase;
 }
 
+.booking-footer a {
+  color: inherit;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .booking-container {
